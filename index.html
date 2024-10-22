@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kalkulator BMI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        .charts-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .chart-wrapper {
+            width: 48%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kalkulator BMI</h1>
+        
+        <div class="form-group">
+            <label for="height">Tinggi Badan (cm):</label>
+            <input type="number" id="height" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="weight">Berat Badan (kg):</label>
+            <input type="number" id="weight" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="age">Usia:</label>
+            <input type="number" id="age" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="gender">Jenis Kelamin:</label>
+            <select id="gender">
+                <option value="male">Laki-laki</option>
+                <option value="female">Perempuan</option>
+            </select>
+        </div>
+        
+        <button onclick="calculateBMI()">Hitung BMI</button>
+        
+        <div id="result"></div>
+        
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <canvas id="bmiChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bmiChart;
+        let categoryChart;
+
+        function calculateBMI() {
+            const height = parseFloat(document.getElementById('height').value) / 100; // Convert to meters
+            const weight = parseFloat(document.getElementById('weight').value);
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            
+            if (!height || !weight || !age) {
+                alert('Mohon isi semua data yang diperlukan');
+                return;
+            }
+            
+            const bmi = weight / (height * height);
+            let category = '';
+            let color = '';
+            
+            if (bmi < 18.5) {
+                category = 'Kurus (Underweight)';
+                color = '#3498db';
+            } else if (bmi < 25) {
+                category = 'Normal';
+                color = '#2ecc71';
+            } else if (bmi < 30) {
+                category = 'Kelebihan Berat Badan (Overweight)';
+                color = '#f1c40f';
+            } else {
+                category = 'Obesitas';
+                color = '#e74c3c';
+            }
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.backgroundColor = `${color}20`;
+            resultDiv.innerHTML = `
+                <h2>Hasil Analisis</h2>
+                <p>BMI Anda: <strong>${bmi.toFixed(1)}</strong></p>
+                <p>Kategori: <strong>${category}</strong></p>
+                <p>Interpretasi:</p>
+                <ul>
+                    <li>BMI < 18.5: Kurus (Underweight)</li>
+                    <li>BMI 18.5-24.9: Normal</li>
+                    <li>BMI 25-29.9: Kelebihan Berat Badan (Overweight)</li>
+                    <li>BMI ≥ 30: Obesitas</li>
+                </ul>
+            `;
+            
+            updateCharts(bmi, category);
+        }
+        
+        function updateCharts(bmi, category) {
+            // Destroy existing charts if they exist
+            if (bmiChart) bmiChart.destroy();
+            if (categoryChart) categoryChart.destroy();
+            
+            // Create BMI gauge chart
+            const bmiCtx = document.getElementById('bmiChart').getContext('2d');
+            bmiChart = new Chart(bmiCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['BMI Anda', 'Batas Bawah Normal', 'Batas Atas Normal'],
+                    datasets: [{
+                        label: 'BMI',
+                        data: [bmi, 18.5, 24.9],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#2ecc71'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Perbandingan BMI'
+                        }
+                    }
+                }
+            });
+            
+            // Create category distribution chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Kurus', 'Normal', 'Overweight', 'Obesitas'],
+                    datasets: [{
+                        data: [
+                            category.includes('Kurus') ? 1 : 0,
+                            category.includes('Normal') ? 1 : 0,
+                            category.includes('Overweight') ? 1 : 0,
+                            category.includes('Obesitas') ? 1 : 0
+                        ],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#f1c40f',
+                            '#e74c3c'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Kategori BMI Anda'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelompok 8</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .member-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .member-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #1a73e8;
+        }
+        .member-item:hover {
+            background-color: #e8f0fe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kelompok 8</h1>
+        <ul class="member-list">
+            <li class="member-item">Azfa</li>
+            <li class="member-item">Yussha</li>
+            <li class="member-item">Selli</li>
+            <li class="member-item">Silvi</li>
+        </ul>
+    </div>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelompok 8</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .member-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .member-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #1a73e8;
+        }
+        .member-item:hover {
+            background-color: #e8f0fe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kelompok 8</h1>
+        <ul class="member-list">
+            <li class="member-item">Azfa</li>
+            <li class="member-item">Yussha</li>
+            <li class="member-item">Selli</li>
+            <li class="member-item">Silvi</li>
+        </ul>
+    </div>
+</body>
+</html>
